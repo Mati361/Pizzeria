@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pizzería Nápoles - Pedidos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div class="header-content">
+            <h1>🍕 Pizzería Nápoles</h1>
+            <p>Tu pizza lista a un click de distancia</p>
+        </div>
+    </header>
+
+    <main class="contenedor">
+        <h2><i class="fa-solid fa-fire-flame-curved"></i> Nuestro Menú</h2>
+        <section id="contenedor-productos" class="grilla-productos"></section>
+    </main>
+
+    <div id="btn-carrito-flotante" class="carrito-flotante" onclick="abrirModalCarrito()">
+        <i class="fa-solid fa-cart-shopping"></i>
+        <span id="contador-carrito">0</span>
+    </div>
+
+    <div id="modal-carrito" class="modal">
+        <div class="modal-contenido">
+            <span class="cerrar-modal" onclick="cerrarModalCarrito()">&times;</span>
+            
+            <h3><i class="fa-solid fa-basket-shopping"></i> Tu Pedido</h3>
+            
+            <div id="lista-carrito" class="lista-carrito">
+                </div>
+
+            <div class="total-contenedor">
+                <p>Total: <span id="total-precio">$0</span></p>
+            </div>
+
+            <form id="formulario-pedido" onsubmit="procesarCompra(event)">
+                <h4><i class="fa-solid fa-truck-fast"></i> Datos de Entrega</h4>
+                
+                <div class="grupo-input">
+                    <label><i class="fa-solid fa-user"></i> Nombre completo</label>
+                    <input type="text" id="form-nombre" required placeholder="Ej: Juan Pérez">
+                </div>
+
+                <div class="grupo-input">
+                    <label><i class="fa-solid fa-phone"></i> Teléfono celular</label>
+                    <input type="tel" id="form-telefono" required placeholder="Ej: 1123456789">
+                </div>
+
+                <div class="flex-inputs">
+                    <div class="grupo-input">
+                        <label><i class="fa-solid fa-location-dot"></i> Dirección / Calle</label>
+                        <input type="text" id="form-direccion" required placeholder="Ej: Av. San Martín">
+                    </div>
+                    <div class="grupo-input short">
+                        <label>Altura</label>
+                        <input type="number" id="form-altura" required placeholder="1234">
+                    </div>
+                </div>
+
+                <h4><i class="fa-solid fa-credit-card"></i> Forma de Pago</h4>
+                <div class="botones-pago">
+                    <button type="button" id="btn-efectivo" class="btn-pago activo" onclick="seleccionarMetodo('Efectivo')">
+                        <i class="fa-solid fa-money-bill-wave"></i> Efectivo
+                    </button>
+                    <button type="button" id="btn-transferencia" class="btn-pago" onclick="seleccionarMetodo('Transferencia')">
+                        <i class="fa-solid fa-building-columns"></i> Transferencia
+                    </button>
+                </div>
+
+                <div id="seccion-efectivo" class="animacion-fade">
+                    <div class="grupo-input">
+                        <label><i class="fa-solid fa-wallet"></i> ¿Con cuánto vas a abonar?</label>
+                        <input type="number" id="form-abona" placeholder="Ej: 15000" oninput="calcularVuelto()">
+                        <div id="sugerencias-pago" class="sugerencias"></div>
+                    </div>
+                    <div class="grupo-input">
+                        <label><i class="fa-solid fa-hand-holding-dollar"></i> Tu cambio será de:</label>
+                        <input type="text" id="form-vuelto" readonly value="$0" class="input-readonly">
+                    </div>
+                </div>
+
+                <div class="botones-acciones">
+                    <button type="button" class="btn-vaciar" onclick="confirmarVaciarCarrito()">
+                        <i class="fa-solid fa-trash-can"></i> Vaciar Carrito
+                    </button>
+                    <button type="submit" class="btn-confirmar">
+                        <i class="fa-solid fa-whatsapp"></i> Confirmar Pedido
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
