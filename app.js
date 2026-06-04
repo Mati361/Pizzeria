@@ -380,55 +380,101 @@ async function agregarNuevoProductoForm() {
     }
 }
 
+// ==========================================================================
+// 📸 AGREGAR PRODUCTO: Con soporte para fotos reales desde el celular
+// ==========================================================================
+async function agregarNuevoProductoForm() {
+    const { value: formValues } = await Swal.fire({
+        title: 'Agregar Nueva Plantilla',
+        html:
+            '<input id="swal-nombre" class="swal2-input" placeholder="Nombre (ej: Milanesa Completa)">' +
+            '<input id="swal-precio" type="number" class="swal2-input" placeholder="Precio ($)">' +
+            '<div style="margin-top: 15px; font-weight: bold; text-align: left; padding: 0 20px; color: #2c3e50; font-size: 14px;">📸 Sacar foto o elegir de la galería:</div>' +
+            '<input id="swal-foto-archivo" type="file" accept="image/*" class="swal2-input" style="border: none; box-shadow: none; font-size: 14px;">',
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'Guardar Menú',
+        cancelButtonText: 'Cancelar',
+        preConfirm: async () => {
+            const nombre = document.getElementById('swal-nombre').value.trim();
+            const precio = parseFloat(document.getElementById('swal-precio').value);
+            const inputArchivo = document.getElementById('swal-foto-archivo');
+            
+            if (!nombre || isNaN(precio) || precio <= 0) {
+                Swal.showValidationMessage('Por favor completa Nombre y Precio válido');
+                return false;
+            }
+
+            // Imagen por defecto si no saca ninguna foto
+            let imagenB64 = "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500"; 
+            
+            // Si el cliente seleccionó un archivo o sacó una foto con la cámara
+            if (inputArchivo.files && inputArchivo.files[0]) {
+                const archivo = inputArchivo.files[0];
+                
+                // Procesamos la foto para convertirla a texto Base64
+                imagenB64 = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(archivo);
+                });
+            }
+
+            return { nombre, precio, imagen: imagenB64 };
+        }
+    });
+
+    if (formValues) {
+        db.ref('pizzas_menu').push(formValues);
+        Swal.fire('¡Subido!', 'El producto ya está disponible en el catálogo.', 'success');
+    }
+}
+
+// ==========================================================================
+// 📝 EDITAR PRODUCTO: Permite cambiar el nombre, precio o sacar foto nueva
+// ==========================================================================
 async function editarProducto(id) {
     const prod = pizzas.find(p => p.id === id);
     if (!prod) return;
 
     const { value: formValues } = await Swal.fire({
-        title: 'Editar Producto Online',
+        title: 'Editar Producto',
         html:
             `<input id="swal-edit-nombre" class="swal2-input" placeholder="Nombre" value="${prod.nombre}">` +
             `<input id="swal-edit-precio" type="number" class="swal2-input" placeholder="Precio ($)" value="${prod.precio}">` +
-            `<input id="swal-edit-imagen" class="swal2-input" placeholder="URL Imagen" value="${prod.imagen}">`,
+            '<div style="margin-top: 15px; font-weight: bold; text-align: left; padding: 0 20px; color: #2c3e50; font-size: 14px;">📸 Cambiar foto (Opcional):</div>' +
+            '<input id="swal-edit-foto" type="file" accept="image/*" class="swal2-input" style="border: none; box-shadow: none; font-size: 14px;">',
         focusConfirm: false,
         showCancelButton: true,
-        confirmButtonText: 'Actualizar Global',
+        confirmButtonText: 'Actualizar',
         cancelButtonText: 'Cancelar',
-        preConfirm: () => {
+        preConfirm: async () => {
             const nombre = document.getElementById('swal-edit-nombre').value.trim();
             const precio = parseFloat(document.getElementById('swal-edit-precio').value);
-            const imagen = document.getElementById('swal-edit-imagen').value.trim();
+            const inputArchivo = document.getElementById('swal-edit-foto');
 
             if (!nombre || isNaN(precio) || precio <= 0) {
                 Swal.showValidationMessage('Nombre y precio requeridos');
                 return false;
             }
-            return { nombre, precio, imagen };
+
+            let imagenB64 = prod.imagen; // Si no sube nada nuevo, mantiene la foto que ya tenía
+
+            if (inputArchivo.files && inputArchivo.files[0]) {
+                const archivo = inputArchivo.files[0];
+                imagenB64 = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(archivo);
+                });
+            }
+
+            return { nombre, precio, imagen: imagenB64 };
         }
     });
 
     if (formValues) {
         db.ref('pizzas_menu/' + id).update(formValues);
-        Swal.fire('¡Modificado!', 'Cambio guardado en la base de datos.', 'success');
+        Swal.fire('¡Modificado!', 'Los cambios se aplicaron en tiempo real.', 'success');
     }
-}
-
-function eliminarProducto(id) {
-    const prod = pizzas.find(p => p.id === id);
-    if (!prod) return;
-
-    Swal.fire({
-        title: `¿Eliminar ${prod.nombre} de la nube?`,
-        text: "Esto quitará el producto para absolutamente todos los clientes.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#e74c3c',
-        confirmButtonText: 'Sí, borrar de todos lados',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            db.ref('pizzas_menu/' + id).remove();
-            Swal.fire('Eliminado', 'El producto desapareció del menú global.', 'success');
-        }
-    });
 }
