@@ -239,4 +239,5 @@ function procesarCompra(event) {
         actualizarContadorInterfaz();
         window.location.href = urlFinal; // Se va a WhatsApp y saca al usuario de la web
     });
+
 }
