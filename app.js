@@ -1,36 +1,87 @@
-// CONFIGURACIÓN DE TU CLIENTE (Código de país + área + número sin el + ni espacios)
+// CONFIGURACIÓN DE TU CLIENTE 
 const TELEFONO_PIZZERIA = "5491134984283"; 
+// Colocá acá tu link de cobro (Mercado Pago, etc.) para las tarjetas
+const LINK_PAGO_TARJETA = "https://link.mercadopago.com.ar/tu_pizzería_ejemplo"; 
 
-const pizzas = [
-    { id: 1, nombre: "Muzarella", precio: 13000, imagen: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500" },
-    { id: 2, nombre: "Especial (Jamón y morrones)", precio: 15500, imagen: "https://images.unsplash.com/photo-1590947132387-155cc02f3212?w=500" },
-    { id: 3, nombre: "Fugazzeta", precio: 14000, imagen: "https://images.unsplash.com/photo-1628840042765-356cda07504e?w=500" }
-];
+// 💻 CONFIGURACIÓN DE FIREBASE (Reemplazar por tus datos de consola)
+const firebaseConfig = {
+    apiKey: "TU_API_KEY_AQUÍ",
+    authDomain: "TU_PROJECT_ID.firebaseapp.com",
+    databaseURL: "https://TU_PROJECT_ID-default-rtdb.firebaseio.com", 
+    projectId: "TU_PROJECT_ID",
+    storageBucket: "TU_PROJECT_ID.appspot.com",
+    messagingSenderId: "TU_SENDER_ID",
+    appId: "TU_APP_ID"
+};
 
+// Inicializar Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let pizzas = [];
 let carrito = [];
 let metodoPagoSeleccionado = "Efectivo";
+let modoAdmin = false;
 
-// Cargar catálogo al inicio
+// Cargar catálogo desde Firebase en tiempo real
 document.addEventListener("DOMContentLoaded", () => {
+    verificarModoAdmin();
+    
+    db.ref('pizzas_menu').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            pizzas = Object.keys(data).map(key => ({
+                id: key, 
+                nombre: data[key].nombre,
+                precio: data[key].precio,
+                imagen: data[key].imagen
+            }));
+        } else {
+            // Menú inicial por defecto si la base de datos está vacía
+            const menuInicial = {
+                "p1": { nombre: "Muzarella", precio: 13000, imagen: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500" },
+                "p2": { nombre: "Especial (Jamón y morrones)", precio: 15500, imagen: "https://images.unsplash.com/photo-1590947132387-155cc02f3212?w=500" },
+                "p3": { nombre: "Fugazzeta", precio: 14000, imagen: "https://images.unsplash.com/photo-1628840042765-356cda07504e?w=500" }
+            };
+            db.ref('pizzas_menu').set(menuInicial);
+            return;
+        }
+        dibujarProductos();
+    });
+});
+
+function dibujarProductos() {
     const contenedor = document.getElementById("contenedor-productos");
+    contenedor.innerHTML = ""; 
+
     pizzas.forEach(pizza => {
         const tarjeta = document.createElement("div");
         tarjeta.classList.add("tarjeta-producto");
+        
+        const controlesAdmin = modoAdmin ? `
+            <div class="controles-admin">
+                <button type="button" class="btn-admin-edit" onclick="editarProducto('${pizza.id}')" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                <button type="button" class="btn-admin-delete" onclick="eliminarProducto('${pizza.id}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        ` : '';
+
         tarjeta.innerHTML = `
-            <img src="${pizza.imagen}" alt="${pizza.nombre}">
+            <div style="position: relative;">
+                <img src="${pizza.imagen}" alt="${pizza.nombre}">
+                ${controlesAdmin}
+            </div>
             <div class="info-producto">
                 <h3>${pizza.nombre}</h3>
                 <p class="precio">$${pizza.precio.toLocaleString('es-AR')}</p>
-                <button class="btn-agregar" onclick="agregarAlCarrito(${pizza.id})">
+                <button type="button" class="btn-agregar" onclick="agregarAlCarrito('${pizza.id}')">
                     <i class="fa-solid fa-plus"></i> Agregar al carrito
                 </button>
             </div>
         `;
         contenedor.appendChild(tarjeta);
     });
-});
+}
 
-// Lógica de agregado al carrito
 function agregarAlCarrito(id) {
     const pizzaSeleccionada = pizzas.find(p => p.id === id);
     const itemEnCarrito = carrito.find(item => item.id === id);
@@ -43,7 +94,6 @@ function agregarAlCarrito(id) {
 
     actualizarContadorInterfaz();
     
-    // Alerta rápida SweetAlert de éxito abajo a la derecha
     Swal.fire({
         text: `¡${pizzaSeleccionada.nombre} agregada!`,
         icon: 'success',
@@ -59,7 +109,6 @@ function actualizarContadorInterfaz() {
     document.getElementById("contador-carrito").innerText = totalCantidades;
 }
 
-// Control del Modal
 function abrirModalCarrito() {
     if (carrito.length === 0) {
         Swal.fire({ title: "Carrito vacío", text: "Sumá alguna pizza antes de ver tu pedido.", icon: "info", confirmButtonColor: "#e74c3c" });
@@ -73,11 +122,9 @@ function cerrarModalCarrito() {
     document.getElementById("modal-carrito").style.display = "none";
 }
 
-// Renderizar la lista de compras dentro del modal
 function dibujarContenidoCarrito() {
     const listaHtml = document.getElementById("lista-carrito");
     listaHtml.innerHTML = "";
-    
     let total = 0;
 
     carrito.forEach(item => {
@@ -99,39 +146,42 @@ function dibujarContenidoCarrito() {
     calcularVuelto();
 }
 
-// Botones e Intercambio de Efectivo / Transferencia
+// Intercambio Visual de Métodos de Pago (Efectivo / Transferencia / Tarjeta)
 function seleccionarMetodo(metodo) {
     metodoPagoSeleccionado = metodo;
     const btnEfectivo = document.getElementById("btn-efectivo");
     const btnTransf = document.getElementById("btn-transferencia");
+    const btnTarjeta = document.getElementById("btn-tarjeta");
     const seccionEfectivo = document.getElementById("seccion-efectivo");
+
+    // Resetear clases activas
+    btnEfectivo.classList.remove("activo");
+    btnTransf.classList.remove("activo");
+    btnTarjeta.classList.remove("activo");
 
     if (metodo === "Efectivo") {
         btnEfectivo.classList.add("activo");
-        btnTransf.classList.remove("activo");
         seccionEfectivo.style.display = "block";
-    } else {
+    } else if (metodo === "Transferencia") {
         btnTransf.classList.add("activo");
-        btnEfectivo.classList.remove("activo");
+        seccionEfectivo.style.display = "none";
+    } else if (metodo === "Tarjeta") {
+        btnTarjeta.classList.add("activo");
         seccionEfectivo.style.display = "none";
     }
 }
 
-// Autocompletado inteligente de billetes sugeridos
 function generarSugerenciasPago(total) {
     const sugerenciasDiv = document.getElementById("sugerencias-pago");
     sugerenciasDiv.innerHTML = "";
     
-    // Generamos tres cortes lógicos superiores al total
     const opciones = [
         Math.ceil(total / 1000) * 1000, 
         Math.ceil(total / 5000) * 5000,
         Math.ceil((total + 5000) / 10000) * 10000
     ];
     
-    // Eliminamos duplicados por si acaso
     const opcionesUnicas = [...new Set(opciones)];
-
     opcionesUnicas.forEach(monto => {
         if(monto >= total) {
             const btn = document.createElement("button");
@@ -161,7 +211,6 @@ function calcularVuelto() {
     }
 }
 
-// Vaciar Carrito con SweetAlert de doble confirmación
 function confirmarVaciarCarrito() {
     Swal.fire({
         title: '¿Seguro querés vaciar el carrito?',
@@ -182,7 +231,7 @@ function confirmarVaciarCarrito() {
     });
 }
 
-// Procesar el Submit y enviar WhatsApp
+// Procesar el Submit y redirecciones inteligentes según el pago
 function procesarCompra(event) {
     event.preventDefault();
 
@@ -198,7 +247,6 @@ function procesarCompra(event) {
         return;
     }
 
-    // Estructurar Ticket
     let pedidoTexto = "";
     carrito.forEach(item => {
         pedidoTexto += `🍕 *${item.cantidad}x* ${item.nombre} ($${(item.precio * item.cantidad).toLocaleString('es-AR')})\n`;
@@ -209,6 +257,10 @@ function procesarCompra(event) {
         const vuelto = abonaCon - total;
         detallesPago += `👉 Paga con: $${abonaCon.toLocaleString('es-AR')}\n`;
         detallesPago += `👉 Cambio requerido: $${vuelto.toLocaleString('es-AR')}\n`;
+    } else if (metodoPagoSeleccionado === "Transferencia") {
+        detallesPago += `⚠️ *Nota:* Enviaré el comprobante de transferencia adjunto a este mensaje.\n`;
+    } else if (metodoPagoSeleccionado === "Tarjeta") {
+        detallesPago += `💳 *Estado:* Pago procesado online mediante tarjeta.\n`;
     }
 
     let mensajeCompleto = `=========================\n`;
@@ -224,20 +276,158 @@ function procesarCompra(event) {
     mensajeCompleto += detallesPago;
     mensajeCompleto += `\n=========================\n`;
 
-    const urlFinal = `https://wa.me/${TELEFONO_PIZZERIA}?text=${encodeURIComponent(mensajeCompleto)}`;
+    const urlWhatsapp = `https://wa.me/${TELEFONO_PIZZERIA}?text=${encodeURIComponent(mensajeCompleto)}`;
 
-    // Alerta final de agradecimiento
-    Swal.fire({
-        title: '¡Gracias por tu compra!',
-        text: 'Te estamos redirigiendo a WhatsApp para enviar el ticket automático.',
-        icon: 'success',
-        confirmButtonColor: '#25d366',
-        confirmButtonText: 'Enviar ticket'
-    }).then(() => {
-        // Al darle aceptar en el modal, vaciamos localmente y redirigimos
-        carrito = [];
-        actualizarContadorInterfaz();
-        window.location.href = urlFinal; // Se va a WhatsApp y saca al usuario de la web
+    // Flujo dinámico según método de pago con SweetAlert
+    if (metodoPagoSeleccionado === "Tarjeta") {
+        Swal.fire({
+            title: 'Procediendo al pago',
+            text: 'Te abriremos la pasarela segura para cargar tu tarjeta. Luego de abonar, recordá enviar el ticket por WhatsApp.',
+            icon: 'info',
+            confirmButtonColor: '#3498db',
+            confirmButtonText: 'Ir a pagar tarjeta'
+        }).then(() => {
+            // Guardamos el link de WhatsApp, limpiamos interfaz y abrimos primero pasarela
+            carrito = [];
+            actualizarContadorInterfaz();
+            window.open(LINK_PAGO_TARJETA, '_blank'); // Abre pasarela en pestaña nueva
+            window.location.href = urlWhatsapp;      // Redirige la web principal al chat de WhatsApp
+        });
+    } else if (metodoPagoSeleccionado === "Transferencia") {
+        Swal.fire({
+            title: '¡Pedido Reservado!',
+            text: 'Te redirigimos a WhatsApp para enviarte el alias/CBU y que puedas mandarnos el comprobante de transferencia.',
+            icon: 'success',
+            confirmButtonColor: '#25d366',
+            confirmButtonText: 'Enviar Ticket y Comprobante'
+        }).then(() => {
+            carrito = [];
+            actualizarContadorInterfaz();
+            window.location.href = urlWhatsapp;
+        });
+    } else {
+        // Efectivo estándar
+        Swal.fire({
+            title: '¡Gracias por tu compra!',
+            text: 'Te estamos redirigiendo a WhatsApp para enviar el ticket automático al local.',
+            icon: 'success',
+            confirmButtonColor: '#25d366',
+            confirmButtonText: 'Enviar ticket'
+        }).then(() => {
+            carrito = [];
+            actualizarContadorInterfaz();
+            window.location.href = urlWhatsapp;
+        });
+    }
+}
+
+/* ==========================================================================
+   🔒 PANEL INTEGRADO DE ADMINISTRADOR (CONEXIÓN FIREBASE EN NUBE)
+   ========================================================================== */
+function verificarModoAdmin() {
+    const parametrosUrl = new URLSearchParams(window.location.search);
+    if (parametrosUrl.get('admin') === 'napoles') {
+        modoAdmin = true;
+        inyectarBarraYBotonesAdmin();
+    }
+}
+
+function inyectarBarraYBotonesAdmin() {
+    const barra = document.createElement("div");
+    barra.className = "barra-admin-alerta";
+    barra.innerHTML = `<i class="fa-solid fa-cloud"></i> Modo Admin Online — Los cambios impactan a todos los clientes en tiempo real.`;
+    document.body.insertBefore(barra, document.body.firstChild);
+
+    const btnAgregarNuevo = document.createElement("div");
+    btnAgregarNuevo.className = "btn-admin-flotante";
+    btnAgregarNuevo.innerHTML = `<i class="fa-solid fa-plus"></i>`;
+    btnAgregarNuevo.title = "Agregar Nueva Pizza a la Nube";
+    btnAgregarNuevo.onclick = agregarNuevoProductoForm;
+    document.body.appendChild(btnAgregarNuevo);
+}
+
+async function agregarNuevoProductoForm() {
+    const { value: formValues } = await Swal.fire({
+        title: 'Agregar Nueva Pizza (Online)',
+        html:
+            '<input id="swal-nombre" class="swal2-input" placeholder="Nombre de la pizza">' +
+            '<input id="swal-precio" type="number" class="swal2-input" placeholder="Precio ($)">' +
+            '<input id="swal-imagen" class="swal2-input" placeholder="URL de la imagen (Link)">',
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'Guardar en la Nube',
+        cancelButtonText: 'Cancelar',
+        preConfirm: () => {
+            const nombre = document.getElementById('swal-nombre').value.trim();
+            const precio = parseFloat(document.getElementById('swal-precio').value);
+            let imagen = document.getElementById('swal-imagen').value.trim();
+
+            if (!nombre || isNaN(precio) || precio <= 0) {
+                Swal.showValidationMessage('Por favor completa Nombre y Precio válido');
+                return false;
+            }
+            if (!imagen) {
+                imagen = "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500";
+            }
+            return { nombre, precio, imagen };
+        }
     });
 
+    if (formValues) {
+        db.ref('pizzas_menu').push(formValues);
+        Swal.fire('¡Subido!', 'El menú global fue actualizado.', 'success');
+    }
+}
+
+async function editarProducto(id) {
+    const prod = pizzas.find(p => p.id === id);
+    if (!prod) return;
+
+    const { value: formValues } = await Swal.fire({
+        title: 'Editar Producto Online',
+        html:
+            `<input id="swal-edit-nombre" class="swal2-input" placeholder="Nombre" value="${prod.nombre}">` +
+            `<input id="swal-edit-precio" type="number" class="swal2-input" placeholder="Precio ($)" value="${prod.precio}">` +
+            `<input id="swal-edit-imagen" class="swal2-input" placeholder="URL Imagen" value="${prod.imagen}">`,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'Actualizar Global',
+        cancelButtonText: 'Cancelar',
+        preConfirm: () => {
+            const nombre = document.getElementById('swal-edit-nombre').value.trim();
+            const precio = parseFloat(document.getElementById('swal-edit-precio').value);
+            const imagen = document.getElementById('swal-edit-imagen').value.trim();
+
+            if (!nombre || isNaN(precio) || precio <= 0) {
+                Swal.showValidationMessage('Nombre y precio requeridos');
+                return false;
+            }
+            return { nombre, precio, imagen };
+        }
+    });
+
+    if (formValues) {
+        db.ref('pizzas_menu/' + id).update(formValues);
+        Swal.fire('¡Modificado!', 'Cambio guardado en la base de datos.', 'success');
+    }
+}
+
+function eliminarProducto(id) {
+    const prod = pizzas.find(p => p.id === id);
+    if (!prod) return;
+
+    Swal.fire({
+        title: `¿Eliminar ${prod.nombre} de la nube?`,
+        text: "Esto quitará el producto para absolutamente todos los clientes.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        confirmButtonText: 'Sí, borrar de todos lados',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            db.ref('pizzas_menu/' + id).remove();
+            Swal.fire('Eliminado', 'El producto desapareció del menú global.', 'success');
+        }
+    });
 }
