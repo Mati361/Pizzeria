@@ -117,3 +117,96 @@ h4 { margin: 1.5rem 0 0.8rem 0; border-bottom: 1px solid var(--color-borde); pad
 .btn-confirmar:hover { background: #20ba5a; }
 
 .animacion-fade { transition: all 0.3s ease; }
+/* ==========================================================================
+   💅 DISEÑO PREMIUM MODO ADMIN - PIZZERÍA NÁPOLES
+   ========================================================================== */
+
+/* Barra de alerta superior */
+.barra-admin-alerta {
+    background: linear-gradient(135deg, #2c3e50, #1a252f);
+    color: #f1c40f;
+    text-align: center;
+    padding: 10px 15px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    border-bottom: 2px solid #f1c40f;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Contenedor de botones sobre la foto de la pizza */
+.controles-admin {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+}
+
+/* Estilo general para los botones del producto (Lápiz y Tacho) */
+.btn-admin-edit, .btn-admin-delete {
+    border: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(4px);
+}
+
+/* Botón Editar (Lápiz) */
+.btn-admin-edit {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #2c3e50;
+}
+.btn-admin-edit:hover {
+    background-color: #3498db;
+    color: white;
+    transform: scale(1.1);
+}
+
+/* Botón Eliminar (Tacho) */
+.btn-admin-delete {
+    background-color: rgba(231, 76, 60, 0.9);
+    color: white;
+}
+.btn-admin-delete:hover {
+    background-color: #c0392b;
+    transform: scale(1.1);
+}
+
+/* Botón Flotante Grande [+] para Añadir Producto */
+.btn-admin-flotante {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+    z-index: 9999;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-admin-flotante:hover {
+    transform: scale(1.15) rotate(90deg);
+    box-shadow: 0 8px 25px rgba(46, 204, 113, 0.6);
+}
