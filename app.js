@@ -4,15 +4,16 @@ const TELEFONO_PIZZERIA = "5491134984283";
 const LINK_PAGO_TARJETA = "https://link.mercadopago.com.ar/tu_pizzería_ejemplo"; 
 
 // 💻 CONFIGURACIÓN DE FIREBASE (Reemplazar por tus datos de consola)
-const firebaseConfig = {
-    apiKey: "TU_API_KEY_AQUÍ",
-    authDomain: "TU_PROJECT_ID.firebaseapp.com",
-    databaseURL: "https://TU_PROJECT_ID-default-rtdb.firebaseio.com", 
-    projectId: "TU_PROJECT_ID",
-    storageBucket: "TU_PROJECT_ID.appspot.com",
-    messagingSenderId: "TU_SENDER_ID",
-    appId: "TU_APP_ID"
-};
+ const firebaseConfig = {
+    apiKey: "AIzaSyAqrjJCG888EJzRXd4mH7qeuzoq_1KTeFA",
+    authDomain: "pizzeria-cb86c.firebaseapp.com",
+    databaseURL: "https://pizzeria-cb86c-default-rtdb.firebaseio.com",
+    projectId: "pizzeria-cb86c",
+    storageBucket: "pizzeria-cb86c.firebasestorage.app",
+    messagingSenderId: "959330862628",
+    appId: "1:959330862628:web:7f37b32433d61abf5d3ab1",
+    measurementId: "G-7XWF77CB28"
+  };
 
 // Inicializar Firebase
 firebase.initializeApp(firebaseConfig);
