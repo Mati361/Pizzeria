@@ -478,3 +478,34 @@ async function editarProducto(id) {
         Swal.fire('¡Modificado!', 'Los cambios se aplicaron en tiempo real.', 'success');
     }
 }
+// ==========================================================================
+// 🗑️ ELIMINAR PRODUCTO: Borra la tarjeta completa de la pantalla y de Firebase
+// ==========================================================================
+function eliminarProducto(id) {
+    // Le preguntamos al cliente si está seguro para evitar que borre sin querer
+    Swal.fire({
+        title: '¿Estás seguro de eliminarlo?',
+        text: "Esta acción borrará el producto y la foto de forma definitiva.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#7f8c8d',
+        confirmButtonText: 'Sí, borrar cuadro',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Entra a la ruta exacta del producto en Firebase y lo destruye (.remove())
+            db.ref('pizzas_menu/' + id).remove()
+                .then(() => {
+                    Swal.fire(
+                        '¡Eliminado!',
+                        'El producto fue quitado del menú global.',
+                        'success'
+                    );
+                })
+                .catch((error) => {
+                    Swal.fire('Error', 'No se pudo borrar: ' + error.message, 'error');
+                });
+        }
+    });
+}
